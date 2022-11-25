@@ -92,6 +92,15 @@
   border-color: #0070f3;
 }
 
+.inputNumber {
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
 .card h2 {
   margin: 0 0 1rem 0;
   font-size: 1.5rem;

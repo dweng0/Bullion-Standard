@@ -19,7 +19,9 @@ const Home: NextPage = () => {
   const [sellToken, setSellToken] = React.useState<string>('ETH');
   const [provider, setProvider] = React.useState<providers.Web3Provider>();
   const [quotedAmount, setQuotedAmount] = React.useState<string>('');
+  const [title, setTitle] = React.useState<string>('Bullion Standard')
   const [errors, setError] = React.useState<string>('');
+  const [slip, setSlip] = React.useState<string>('');
   const [loading, setLoading] = React.useState<boolean>(false);
   const [quoted, setQuoted] = React.useState<string>('');
   const swappable = [
@@ -47,11 +49,13 @@ const Home: NextPage = () => {
   }
 
   const quote = async () => {
-    console.log('quote params', buyToken, sellToken, amount);
+    setTitle('Bullion Standard')
+    setLoading(true);
     if (!buyToken || !sellToken || !amount || new Big(amount).eq(0)) {
+      setLoading(false);
       return;
     }
-    console.log(1)
+
     let params;
     if (!isSelling) {
       params = {
@@ -69,11 +73,31 @@ const Home: NextPage = () => {
     }
 
     if (params) {
-      const url = `https://api.0x.org/swap/v1/quote?${qs.stringify(params)}`;
-      const response = await fetch(
-        `https://api.0x.org/swap/v1/quote?${qs.stringify(params)}`
-      );
-      setQuoted(await response.json())
+      try {
+        const url = `https://api.0x.org/swap/v1/quote?${qs.stringify(params)}`;
+        const response = await fetch(
+          `https://api.0x.org/swap/v1/quote?${qs.stringify(params)}`
+        );
+        const resp = await response.json();
+        console.log(resp)
+        if (resp) {
+          const price = new Big(resp.guaranteedPrice).toFixed(2)
+          setQuoted(price)
+          setSlip(new Big(resp.expectedSlippage).toFixed(4))
+          setTitle(`Bullion Price ${price}`)
+        }
+      } catch (e) {
+        if (e && e.validationErrors?.length && e.validationErrors[0]?.reason) {
+          setError(`Failed to quote a price: ${e.validationErrors[0].reason}`)
+        } else {
+          setError('Failed to quote a price');
+        }
+      } finally {
+        setLoading(false)
+      }
+
+
+      setLoading(false)
     }
   }
 
@@ -117,6 +141,15 @@ const Home: NextPage = () => {
     }
   }
 
+  const showLoading = () => {
+    if (quoted) {
+      return
+    }
+    if (loading) {
+      return <div><span className="loader loader-circles"></span>Loading...</div>
+    }
+  }
+
   React.useEffect(() => {
     quote();
   }, [amount]);
@@ -131,13 +164,14 @@ const Home: NextPage = () => {
 
       <main className={styles.main}>
         <h1 className={styles.title}>
-          Bullion Standard
+          {title}
         </h1>
         <p className={styles.description}>
           BS Swaps
         </p>
         {errors && <p>{errors}</p>}
-        {quoted && <p>{quoted}</p>}
+        {showLoading()}
+        {slip && <p>slippage {slip}</p>}
         <div className={styles.grid}>
           <div className={styles.card}>
             <h2>In</h2>
@@ -149,7 +183,7 @@ const Home: NextPage = () => {
           </div>
           <div className={styles.card}>
             <h2>Amount to Swap</h2>
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <input className={styles.inputNumber} type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
         </div>
       </main>
