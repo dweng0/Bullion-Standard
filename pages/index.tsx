@@ -24,10 +24,26 @@ const Home: NextPage = () => {
   const [slip, setSlip] = React.useState<string>('');
   const [loading, setLoading] = React.useState<boolean>(false);
   const [quoted, setQuoted] = React.useState<string>('');
+
+
+  const convertWithDecimals = (decimals = 18, convertTo = true) => {
+    const BASE = 10;
+    return (value: string) => {
+      return convertTo ?
+        new Big(value).mul(new Big(BASE).pow(Number(decimals) || 18)).toString()
+        : new Big(value).div(new Big(BASE).pow(Number(decimals) || 18)).toString()
+    }
+  }
+
+  const convertTo = (value: string, decimals: number) => convertWithDecimals(decimals, true)(value)
+  const convertFrom = (value: string, decimals: number) => convertWithDecimals(decimals, false)(value)
+
   const swappable = [
-    { value: 'ETH', label: 'ETH' },
-    { value: 'DAI', label: 'DAI' },
-    { value: 'USDC', label: 'USDC' }
+    { value: '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6', label: 'ETH' },
+    { value: '0xdc31ee1784292379fbb2964b3b9c4124d8f89c60', label: 'DAI' },
+    { value: '0x07865c6e87b9f70255377e024ace6630c1eaa37f', label: 'USDC' },
+    { value: '0x45cd94330ac3aea42cc21cf9315b745e27e768bd', label: 'GSB' },
+    { value: '0x871dd7c2b4b25e1aa18728e9d5f2af4c4e431f5c', label: 'ZRX' }
   ]
   const connectWallet = async () => {
     try {
@@ -55,36 +71,43 @@ const Home: NextPage = () => {
       setLoading(false);
       return;
     }
+    const baseAmount = convertTo(amount, 18)
 
     let params;
     if (!isSelling) {
       params = {
         sellToken,
         buyToken,
-        buyAmount: new Big(amount).toString()
+        buyAmount: baseAmount
       }
 
     } else {
       params = {
         sellToken,
         buyToken,
-        sellAmount: new Big(amount).toString()
+        sellAmount: baseAmount
       }
     }
 
     if (params) {
       try {
+        debugger;
         const url = `https://goerli.api.0x.org/swap/v1/quote?${qs.stringify(params)}`;
         const response = await fetch(url);
         const resp = await response.json();
         console.log(resp)
         if (resp) {
-          const price = new Big(resp.guaranteedPrice).toFixed(2)
+          console.log('have this,', resp.price);
+          const price = new Big(convertFrom(resp.price, 18)).toFixed(6)
           setQuoted(price)
-          setSlip(new Big(resp.expectedSlippage).toFixed(4))
+          if (resp.expectedSlippage) {
+            setSlip(new Big(resp.expectedSlippage).toFixed(4))
+          }
           setTitle(`Bullion Price ${price}`)
         }
       } catch (e) {
+        console.log('reason for failuer', e)
+        debugger;
         if (e && e.validationErrors?.length && e.validationErrors[0]?.reason) {
           setError(`Failed to quote a price: ${e.validationErrors[0].reason}`)
         } else {
@@ -149,6 +172,7 @@ const Home: NextPage = () => {
   }
 
   React.useEffect(() => {
+    setError('');
     quote();
   }, [amount]);
 
