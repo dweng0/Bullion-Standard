@@ -74,10 +74,8 @@ const Home: NextPage = () => {
 
     if (params) {
       try {
-        const url = `https://api.0x.org/swap/v1/quote?${qs.stringify(params)}`;
-        const response = await fetch(
-          `https://api.0x.org/swap/v1/quote?${qs.stringify(params)}`
-        );
+        const url = `https://goerli.api.0x.org/swap/v1/quote?${qs.stringify(params)}`;
+        const response = await fetch(url);
         const resp = await response.json();
         console.log(resp)
         if (resp) {
