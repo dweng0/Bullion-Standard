@@ -91,14 +91,12 @@ const Home: NextPage = () => {
 
     if (params) {
       try {
-        debugger;
-        const url = `https://goerli.api.0x.org/swap/v1/quote?${qs.stringify(params)}`;
+        const url = `https://goerli.api.0x.org/swap/v1/price?${qs.stringify(params)}`;
         const response = await fetch(url);
         const resp = await response.json();
         console.log(resp)
         if (resp) {
-          console.log('have this,', resp.price);
-          const price = new Big(convertFrom(resp.price, 18)).toFixed(6)
+          const price = new Big(convertFrom(resp.buyAmount, 18)).toFixed(6)
           setQuoted(price)
           if (resp.expectedSlippage) {
             setSlip(new Big(resp.expectedSlippage).toFixed(4))
@@ -106,8 +104,7 @@ const Home: NextPage = () => {
           setTitle(`Bullion Price ${price}`)
         }
       } catch (e) {
-        console.log('reason for failuer', e)
-        debugger;
+
         if (e && e.validationErrors?.length && e.validationErrors[0]?.reason) {
           setError(`Failed to quote a price: ${e.validationErrors[0].reason}`)
         } else {
@@ -196,12 +193,12 @@ const Home: NextPage = () => {
         {slip && <p>slippage {slip}</p>}
         <div className={styles.grid}>
           <div className={styles.card}>
-            <h2>In</h2>
-            <Select options={swappable} onChange={(options) => setBuyToken(options.value)} />
+            <h2>Sell</h2>
+            <Select options={swappable} onChange={(options) => setSellToken(options.value)} />
           </div>
           <div className={styles.card}>
-            <h2>Out</h2>
-            <Select options={swappable} onChange={(options) => setSellToken(options.value)} />
+            <h2>Buy</h2>
+            <Select options={swappable} onChange={(options) => setBuyToken(options.value)} />
           </div>
           <div className={styles.card}>
             <h2>Amount to Swap</h2>
